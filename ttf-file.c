@@ -30,6 +30,7 @@
 #define TTF_OFF_head	0x68656164	// Font header
 #define TTF_OFF_hhea	0x68686561	// Horizontal header
 #define TTF_OFF_hmtx	0x686d7478	// Horizontal metrics
+#define TTF_OFF_kern	0x6b65726e	// Kerning tables
 #define TTF_OFF_maxp	0x6d617870	// Maximum profile
 #define TTF_OFF_name	0x6e616d65	// Naming table
 #define TTF_OFF_OS_2	0x4f532f32	// OS/2 and Windows specific metrics
@@ -59,7 +60,14 @@
 // Local types...
 //
 
-typedef struct _ttf_metric_s		//*** Font metric information ****/
+typedef struct _ttf_kerning_s		// Font kerning data
+{
+  unsigned short left,			// Left glyph
+		right;			// Right glyph
+  short		adj;			// Horizontal adjustment
+} _ttf_kerning_t;
+
+typedef struct _ttf_metric_s		// Font metric information
 {
   short		width,			// Advance width
 		left_bearing;		// Left side bearing
@@ -127,6 +135,8 @@ struct _ttf_s
   int		*cmap;			// Unicode character to glyph map
   _ttf_metric_t	*widths[TTF_FONT_MAX_CHAR / 256];
 					// Character metrics (sparse array)
+  size_t	num_kerning;		// Number of kerning pairs
+  _ttf_kerning_t *kerning;		// Kerning pairs
   float		units;			// Width units
   short		ascent,			// Maximum ascent above baseline
 		descent,		// Maximum descent below baseline
@@ -211,6 +221,7 @@ typedef struct _ttf_off_post_s		// PostScript information
 // Local functions...
 //
 
+static int	compare_kerning(_ttf_kerning_t *a, _ttf_kerning_t *b);
 static char	*copy_name(ttf_t *font, unsigned name_id);
 static ttf_t	*create_font(const char *filename, const void *data, size_t datasize, size_t idx, ttf_err_cb_t err_cb, void *err_cbdata);
 static void	errorf(ttf_t *font, const char *message, ...) TTF_FORMAT_ARGS(2,3);
@@ -223,6 +234,7 @@ static bool	read_cmap(ttf_t *font);
 static bool	read_head(ttf_t *font, _ttf_off_head_t *head);
 static bool	read_hhea(ttf_t *font, _ttf_off_hhea_t *hhea);
 static _ttf_metric_t *read_hmtx(ttf_t *font, _ttf_off_hhea_t *hhea);
+static bool	read_kern(ttf_t *font);
 static int	read_maxp(ttf_t *font);
 static bool	read_names(ttf_t *font);
 static bool	read_os_2(ttf_t *font, _ttf_off_os_2_t *os_2);
@@ -592,6 +604,130 @@ ttfGetItalicAngle(ttf_t *font)		// I - Font
 
 
 //
+// 'ttfGetKernedExtents()' - Get the kerned extents of a string.
+//
+// This function computes the kerned extents of the UTF-8 string "s" when
+// rendered using the specified font "font" and size "size".  The "extents"
+// argument is a pointer to a `ttf_rect_t` structure that is filled with the
+// extents of a kerned rendering of the string with no rewriting applied.  The
+// "adjs" argument specifies and array of `double` values up to "max_adjs" long
+// containing the kerning adjustments between each pair of characters.  The
+// extent and adjustment values are scaled using the specified font size.
+//
+
+size_t					// O - Number of kerned pairs
+ttfGetKernedExtents(ttf_t      *font,	// I - Font
+                    float      size,	// I - Font size
+                    const char *s,	// I - String
+                    ttf_rect_t *extents,// O - Kerned extents of string
+                    size_t     max_adjs,// I - Maximum number of kerning adjustments
+                    double     *adjs)	// I - Array of kerning adjustments
+{
+  bool		first = true;		// First character?
+  int		ch,			// Current character
+		width = 0;		// Width
+  _ttf_metric_t	*widths;		// Widths
+  size_t	num_adjs = 0;		// Number of adjustments
+  _ttf_kerning_t key,			// Kerning pair search key
+		*kp;			// Kerning pair, if any
+
+
+  TTF_DEBUG("ttfGetExtents(font=%p, size=%.2f, s=\"%s\", extents=%p)\n", (void *)font, size, s, (void *)extents);
+
+  // Make sure extents and kerning adjustments are zeroed out...
+  if (extents)
+    memset(extents, 0, sizeof(ttf_rect_t));
+
+  if (adjs && max_adjs > 0)
+    memset(adjs, 0, max_adjs * sizeof(double));
+
+  // Range check input...
+  if (!font || size <= 0.0f || !s || !extents || !adjs || max_adjs == 0)
+    return (0);
+
+  // Loop through the string...
+  while ((ch = next_unicode(font, &s)) != 0)
+  {
+    // Find its width...
+    if (ch < TTF_FONT_MAX_CHAR && (widths = font->widths[ch / 256]) != NULL)
+    {
+      if (first)
+        extents->left = -widths[ch & 255].left_bearing / font->units;
+
+      width += widths[ch & 255].width;
+    }
+    else if ((widths = font->widths[0]) != NULL)
+    {
+      // Use the ".notdef" (0) glyph width...
+      if (first)
+      {
+        extents->left = -widths[0].left_bearing / font->units;
+        first         = false;
+      }
+
+      width += widths[0].width;
+    }
+
+    // Then any kerning...
+    if (first)
+    {
+      // This is the first character in the string so save that as the left
+      // glyph...
+      if (ch < font->num_cmap)
+        key.left = font->cmap[ch];
+      else
+        key.left = 0;
+    }
+    else if (num_adjs >= max_adjs)
+    {
+      // Too many pairs...
+      break;
+    }
+    else if (font->num_kerning)
+    {
+      // Lookup kerning information for the current pair of characters...
+      if (ch < font->num_cmap)
+        key.right = font->cmap[ch];
+      else
+        key.right = 0;
+
+      if ((kp = (_ttf_kerning_t *)bsearch(&key, font->kerning, font->num_kerning, sizeof(_ttf_kerning_t), (int (*)(const void *, const void *))compare_kerning)) != NULL)
+      {
+        // Found a pair, add it...
+        width          += kp->adj;
+        adjs[num_adjs] = size * kp->adj / font->units;
+      }
+      else
+      {
+        // No pair, so save as 0...
+        adjs[num_adjs] = 0.0;
+      }
+
+      num_adjs ++;
+
+      // The right glyph is the left glyph for the next pair...
+      key.left = key.right;
+    }
+    else
+    {
+      // No kerning information, so just store 0...
+      adjs[num_adjs] = 0.0;
+      num_adjs ++;
+    }
+  }
+
+  // Calculate the bounding box for the text and return...
+  TTF_DEBUG("ttfGetKernedExtents: width=%d\n", width);
+
+  extents->bottom = size * font->y_min / font->units;
+  extents->right  = size * width / font->units + extents->left;
+  extents->top    = size * font->y_max / font->units;
+
+  return (num_adjs);
+}
+
+
+//
 // 'ttfGetMaxChar()' - Get the last character in the font.
 //
 
@@ -723,6 +859,27 @@ bool					// O - `true` if fixed pitch, `false` otherwise
 ttfIsFixedPitch(ttf_t *font)		// I - Font
 {
   return (font ? font->is_fixed : false);
+}
+
+
+//
+// 'compare_kerning()' - Compare two kerning pairs.
+//
+
+static int				// O - Result of comparison
+compare_kerning(_ttf_kerning_t *a,	// I - First pair
+                _ttf_kerning_t *b)	// I - Second pair
+{
+  if (a->left < b->left)
+    return (-1);
+  else if (a->left > b->left)
+    return (1);
+  else if (a->right < b->right)
+    return (-1);
+  else if (a->right > b->right)
+    return (1);
+  else
+    return (0);
 }
 
 
@@ -1064,6 +1221,10 @@ create_font(const char   *filename,	// I - Filename or `NULL`
       TTF_DEBUG("create_font: width['%c']=%d(%d)\n", (char)i, font->widths[0][i].width, font->widths[0][i].left_bearing);
 #endif // DEBUG > 1
   }
+
+  // Read any kerning tables...
+  if (!read_kern(font))
+    goto error;
 
   // Cleanup and return the font...
   free(widths);
@@ -1879,6 +2040,118 @@ read_hmtx(ttf_t           *font,	// I - Font
   }
 
   return (widths);
+}
+
+
+//
+// 'read_kern()' - Read the kerning table.
+//
+
+static bool				// O - `true` on success, `false` on error
+read_kern(ttf_t *font)			// I - Font
+{
+  unsigned	i, j,			// Looping vars
+		length,			// Table length
+		version,		// Table version
+		nTables,		// Number of kerning tables
+		coverage,		// Coverage of kerning table
+		nPairs;			// Number of kerning pairs
+  _ttf_kerning_t *k;			// Current kerning pair
+
+
+  // Find the kern table...
+  if ((length = seek_table(font, TTF_OFF_kern, 0, false)) == 0)
+    return (true);
+
+  // Get the version and number of tables...
+  if ((version = read_ushort(font)) != 0)
+  {
+//    errorf(font, "Unsupported kern table version %d.", version);
+    return (false);
+  }
+
+  if ((nTables = read_ushort(font)) == 0)
+  {
+    errorf(font, "No subtables in kern table.");
+    return (false);
+  }
+
+  TTF_DEBUG("read_kern: nTables=%u\n", nTables);
+
+  // Then read all the tables...
+  for (i = 0; i < nTables; i ++)
+  {
+    if ((version = read_ushort(font)) != 0)
+    {
+      errorf(font, "Unsupported kern subtable version %d.", version);
+      return (false);
+    }
+
+    if ((length = read_ushort(font)) == 0)
+    {
+      errorf(font, "Empty kern subtable.");
+      return (false);
+    }
+
+    TTF_DEBUG("read_kern: length[%u]=%u\n", i, length);
+
+    if ((coverage = read_ushort(font)) != 1)
+    {
+      char	buffer[1024];		// Read buffer
+      unsigned	bytes;			// Bytes read
+
+      TTF_DEBUG("read_kern: coverage=%u, skipping.\n", coverage);
+
+      for (i = length - 6; i > 0; i -= bytes)
+      {
+        if ((bytes = length) > sizeof(buffer))
+          bytes = sizeof(buffer);
+
+        if ((font->read_cb)(font, buffer, bytes) != bytes)
+	{
+	  errorf(font, "Unable to skip kern subtable.");
+	  return (false);
+	}
+      }
+
+      continue;
+    }
+
+    if ((nPairs = read_ushort(font)) == 0)
+    {
+      errorf(font, "No pairs in kern subtable.");
+      return (false);
+    }
+
+    /*searchRange   = */read_ushort(font);
+    /*entrySelector = */read_ushort(font);
+    /*rangeShift    = */read_ushort(font);
+
+    // Allocate kerning pairs for the font...
+    if ((k = realloc(font->kerning, (font->num_kerning + nPairs) * sizeof(_ttf_kerning_t))) == NULL)
+    {
+      errorf(font, "Unable to allocate memory for %u kerning pairs.", nPairs);
+      return (false);
+    }
+
+    font->kerning     = k;
+    k                 += font->num_kerning;
+    font->num_kerning += nPairs;
+
+    // Read the pairs...
+    for (j = 0; j < nPairs; j ++)
+    {
+      k->left  = read_ushort(font);
+      k->right = read_ushort(font);
+      k->adj   = read_short(font);
+      k ++;
+    }
+  }
+
+  if (font->num_kerning)
+    qsort(font->kerning, font->num_kerning, sizeof(_ttf_kerning_t), (int (*)(const void *, const void *))compare_kerning);
+
+  return (true);
 }
 
 

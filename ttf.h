@@ -109,6 +109,7 @@ extern ttf_rect_t	*ttfGetExtents(ttf_t *font, float size, const char *s, ttf_rec
 extern const char	*ttfGetFamily(ttf_t *font);
 extern const char       *ttfGetFilename(ttf_t *ttf);
 extern float		ttfGetItalicAngle(ttf_t *font);
+extern size_t		ttfGetKernedExtents(ttf_t *font, float size, const char *s, ttf_rect_t *extents, size_t max_adjs, double *adjs);
 extern int		ttfGetMaxChar(ttf_t *font);
 extern int		ttfGetMinChar(ttf_t *font);
 extern size_t		ttfGetNumFonts(ttf_t *font);
