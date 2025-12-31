@@ -18,6 +18,7 @@
 
 #define TTF_FONT_MAX_CHAR	262144	// Maximum number of character values
 #define TTF_FONT_MAX_GROUPS	65536	// Maximum number of sub-groups
+#define TTF_FONT_MAX_KERNING	262144	// Maximum number of kerning pairs
 #define TTF_FONT_MAX_NAMES	16777216// Maximum size of names table we support
 
 
@@ -632,7 +633,7 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
 		*kp;			// Kerning pair, if any
 
 
-  TTF_DEBUG("ttfGetExtents(font=%p, size=%.2f, s=\"%s\", extents=%p)\n", (void *)font, size, s, (void *)extents);
+  TTF_DEBUG("ttfGetKernedExtents(font=%p, size=%.2f, s=\"%s\", extents=%p, max_adjs=%u, adjs=%p)\n", (void *)font, size, s, (void *)extents, (unsigned)max_adjs, (void *)adjs);
 
   // Make sure extents and kerning adjustments are zeroed out...
   if (extents)
@@ -643,7 +644,10 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
 
   // Range check input...
   if (!font || size <= 0.0f || !s || !extents || !adjs || max_adjs == 0)
+  {
+    TTF_DEBUG("ttfGetKernedExtents: Bad input, returning 0.\n");
     return (0);
+  }
 
   // Loop through the string...
   while ((ch = next_unicode(font, &s)) != 0)
@@ -660,10 +664,7 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
     {
       // Use the ".notdef" (0) glyph width...
       if (first)
-      {
         extents->left = -widths[0].left_bearing / font->units;
-        first         = false;
-      }
 
       width += widths[0].width;
     }
@@ -677,6 +678,8 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
         key.left = font->cmap[ch];
       else
         key.left = 0;
+
+      first = false;
     }
     else if (num_adjs >= max_adjs)
     {
@@ -717,7 +720,7 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
   }
 
   // Calculate the bounding box for the text and return...
-  TTF_DEBUG("ttfGetKernedExtents: width=%d\n", width);
+  TTF_DEBUG("ttfGetKernedExtents: width=%d, returning %u.\n", width, (unsigned)num_adjs);
 
   extents->bottom = size * font->y_min / font->units;
   extents->right  = size * width / font->units + extents->left;
@@ -2059,19 +2062,26 @@ read_kern(ttf_t *font)			// I - Font
   _ttf_kerning_t *k;			// Current kerning pair
 
 
+  TTF_DEBUG("read_kern(font=%p)\n", (void *)font);
+
   // Find the kern table...
   if ((length = seek_table(font, TTF_OFF_kern, 0, false)) == 0)
+  {
+    TTF_DEBUG("read_kern: No kern table, returning true.\n");
     return (true);
+  }
 
   // Get the version and number of tables...
   if ((version = read_ushort(font)) != 0)
   {
+    TTF_DEBUG("read_kern: Unsupported kern table version %d, returning false.\n", version);
 //    errorf(font, "Unsupported kern table version %d.", version);
     return (false);
   }
 
   if ((nTables = read_ushort(font)) == 0)
   {
+    TTF_DEBUG("read_kern: No subtables in kern table, returning false.\n");
     errorf(font, "No subtables in kern table.");
     return (false);
   }
@@ -2083,12 +2093,14 @@ read_kern(ttf_t *font)			// I - Font
   {
     if ((version = read_ushort(font)) != 0)
     {
+      TTF_DEBUG("read_kern: Unsupported kern subtable version %d, returning false.\n", version);
       errorf(font, "Unsupported kern subtable version %d.", version);
       return (false);
     }
 
     if ((length = read_ushort(font)) == 0)
     {
+      TTF_DEBUG("read_kern: Empty kern subtable, returning false.\n");
       errorf(font, "Empty kern subtable.");
       return (false);
     }
@@ -2109,6 +2121,7 @@ read_kern(ttf_t *font)			// I - Font
 
         if ((font->read_cb)(font, buffer, bytes) != bytes)
 	{
+	  TTF_DEBUG("read_kern: Unable to skip kern subtable, returning false.\n");
 	  errorf(font, "Unable to skip kern subtable.");
 	  return (false);
 	}
@@ -2119,7 +2132,15 @@ read_kern(ttf_t *font)			// I - Font
 
     if ((nPairs = read_ushort(font)) == 0)
     {
+      TTF_DEBUG("read_kern: No pairs in kern subtable, returning false.\n");
       errorf(font, "No pairs in kern subtable.");
+      return (false);
+    }
+
+    if ((nPairs + font->num_kerning) > TTF_FONT_MAX_KERNING)
+    {
+      TTF_DEBUG("read_kern: Too many pairs (%u) in kern subtable, returning false.\n", (unsigned)(nPairs + font->num_kerning));
+      errorf(font, "Too many pairs in kern subtable.");
       return (false);
     }
 
@@ -2130,6 +2151,7 @@ read_kern(ttf_t *font)			// I - Font
     // Allocate kerning pairs for the font...
     if ((k = realloc(font->kerning, (font->num_kerning + nPairs) * sizeof(_ttf_kerning_t))) == NULL)
     {
+      TTF_DEBUG("read_kern: Unable to allocate memory for %u kerning pairs, returning false.\n", nPairs);
       errorf(font, "Unable to allocate memory for %u kerning pairs.", nPairs);
       return (false);
     }
@@ -2150,6 +2172,8 @@ read_kern(ttf_t *font)			// I - Font
 
   if (font->num_kerning)
     qsort(font->kerning, font->num_kerning, sizeof(_ttf_kerning_t), (int (*)(const void *, const void *))compare_kerning);
+
+  TTF_DEBUG("read_kern: %u kerning pairs in font, returning true.\n", (unsigned)font->num_kerning);
 
   return (true);
 }
@@ -2547,6 +2571,8 @@ seek_table(ttf_t    *font,		// I - Font
   _ttf_off_dir_t *current;		// Current entry
 
 
+  TTF_DEBUG("seek_table(font=%p, tag=%08x(%c%c%c%c), offset=%u, required=%s)\n", (void *)font, tag, (tag >> 24) & 255, (tag >> 16) & 255, (tag >> 8) & 255, tag & 255, offset, required ? "true" : "false");
+
   // Look up the tag in the table...
   for (i = font->table.num_entries, current = font->table.entries; i  > 0; i --, current ++)
   {
@@ -2556,12 +2582,14 @@ seek_table(ttf_t    *font,		// I - Font
       if ((font->seek_cb)(font, current->offset + offset))
       {
         // Successful seek...
+        TTF_DEBUG("seek_table: Success, returning %u.\n", current->length - offset);
         return (current->length - offset);
       }
       else
       {
         // Seek failed...
         errorf(font, "Unable to seek to %c%c%c%c table: %s", (tag >> 24) & 255, (tag >> 16) & 255, (tag >> 8) & 255, tag & 255, strerror(errno));
+        TTF_DEBUG("seek_table: Failure, returning 0.\n");
         return (0);
       }
     }
@@ -2570,6 +2598,8 @@ seek_table(ttf_t    *font,		// I - Font
   // Not found, return 0...
   if (required)
     errorf(font, "%c%c%c%c table not found.", (tag >> 24) & 255, (tag >> 16) & 255, (tag >> 8) & 255, tag & 255);
+
+  TTF_DEBUG("seek_table: Not found, returning 0.\n");
 
   return (0);
 }

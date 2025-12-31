@@ -30,8 +30,8 @@
 static void	error_cb(void *data, const char *message);
 static char	*format_name(char *buffer, size_t bufsize, const char *family, ttf_style_t fstyle, ttf_weight_t fweight, ttf_stretch_t fstretch);
 static int	list_fonts(bool verbose);
-static void	test_find_font(ttf_cache_t *cache, const char *family, ttf_style_t fstyle, ttf_weight_t fweight, ttf_stretch_t fstretch);
-static int	test_font(const char *filename);
+static int	test_find_font(ttf_cache_t *cache, const char *family, ttf_style_t fstyle, ttf_weight_t fweight, ttf_stretch_t fstretch);
+static int	test_font(const char *filename, ttf_t *font);
 
 
 //
@@ -56,15 +56,15 @@ main(int  argc,				// I - Number of command-line arguments
       else if (!strcmp(argv[i], "--verbose"))
         verbose = true;
       else
-	errors += test_font(argv[i]);
+	errors += test_font(argv[i], /*font*/NULL);
     }
   }
   else
   {
     // Test with the bundled TrueType files...
-    errors += test_font("testfiles/OpenSans-Bold.ttf");
-    errors += test_font("testfiles/OpenSans-Regular.ttf");
-    errors += test_font("testfiles/NotoSansJP-Regular.otf");
+    errors += test_font("testfiles/OpenSans-Bold.ttf", /*font*/NULL);
+    errors += test_font("testfiles/OpenSans-Regular.ttf", /*font*/NULL);
+    errors += test_font("testfiles/NotoSansJP-Regular.otf", /*font*/NULL);
 
     errors += list_fonts(false);
   }
@@ -159,6 +159,7 @@ list_fonts(bool verbose)		// I - Be verbose?
   time_t	start,			// Start time
 		end;			// End time
   char		name[256];		// Font name
+  int		errors = 0;		// Number of errors
 
 
   start = time(NULL);
@@ -184,17 +185,21 @@ list_fonts(bool verbose)		// I - Be verbose?
   }
 
 #if _WIN32
-  test_find_font(cache, "Arial", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
-  test_find_font(cache, "Arial", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Arial", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Arial", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+
+#elif defined(__APPLE__)
+  errors += test_find_font(cache, "Helvetica Neue", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Helvetica Neue", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
 
 #else
-  test_find_font(cache, "Helvetica", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
-  test_find_font(cache, "Helvetica", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Helvetica", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Helvetica", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
 #endif // _WIN32
 
-  test_find_font(cache, "Courier", TTF_STYLE_OBLIQUE, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+  errors += test_find_font(cache, "Courier", TTF_STYLE_OBLIQUE, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
 
-  return (0);
+  return (errors);
 }
 
 
@@ -202,7 +207,7 @@ list_fonts(bool verbose)		// I - Be verbose?
 // 'test_find_font()' - Test finding a font.
 //
 
-static void
+static int				// O - Number of errors
 test_find_font(ttf_cache_t   *cache,	// I - Font cache
 	       const char    *family,	// I - Font family
 	       ttf_style_t   fstyle,	// I - Font style
@@ -215,9 +220,16 @@ test_find_font(ttf_cache_t   *cache,	// I - Font cache
 
   testBegin("ttfCacheFind(%s)", format_name(name, sizeof(name), family, fstyle, fweight, fstretch));
   if ((font = ttfCacheFind(cache, family, fstyle, fweight, fstretch)) != NULL)
+  {
     testEndMessage(true, "%s", format_name(name, sizeof(name), ttfGetFamily(font), ttfGetStyle(font), ttfGetWeight(font), ttfGetStretch(font)));
+
+    return (test_font(/*filename*/NULL, font));
+  }
   else
+  {
     testEnd(false);
+    return (1);
+  }
 }
 
 
@@ -226,11 +238,11 @@ test_find_font(ttf_cache_t   *cache,	// I - Font cache
 //
 
 static int				// O - Number of errors
-test_font(const char *filename)		// I - Font filename
+test_font(const char *filename,		// I - Font filename or `NULL`
+          ttf_t      *font)		// I - Font or `NULL` to load
 {
   int		i,			// Looping var
 		errors = 0;		// Number of errors
-  ttf_t		*font;			// Font
   struct stat	fileinfo;		// Font file information
   FILE		*fp = NULL;		// File pointer
   void		*data = NULL;		// Memory buffer for font file
@@ -240,6 +252,9 @@ test_font(const char *filename)		// I - Font filename
   char		psname[1024];		// Postscript font name
   ttf_rect_t	bounds;			// Bounds
   ttf_rect_t	extents;		// Extents
+  size_t	j,			// Looping var
+		num_adjs;		// Number of kerning adjustments
+  double	adjs[1024];		// Kerning adjustments
   size_t	num_fonts;		// Number of fonts
   ttf_style_t	style;			// Font style
   ttf_weight_t	weight;			// Font weight
@@ -273,17 +288,20 @@ test_font(const char *filename)		// I - Font filename
   };
 
 
-  testBegin("ttfCreate(\"%s\")", filename);
-  if ((font = ttfCreate(filename, 0, error_cb, NULL)) != NULL)
-    testEnd(true);
-  else
-    return (1);
+  if (filename && !font)
+  {
+    testBegin("ttfCreate(\"%s\")", filename);
+    if ((font = ttfCreate(filename, 0, error_cb, NULL)) != NULL)
+      testEnd(true);
+    else
+      return (1);
+  }
 
   testBegin("ttfContainsChar(' ')");
   testEnd(ttfContainsChar(font, ' '));
 
-  testBegin("ttfContainsChar('\n')");
-  testEnd(!ttfContainsChar(font, '\n'));
+  testBegin("ttfContainsChar('\\177')");
+  testEnd(!ttfContainsChar(font, '\177'));
 
   testBegin("ttfContainsChars(\"Hello, World!\")");
   testEnd(ttfContainsChars(font, "Hello, World!"));
@@ -337,6 +355,22 @@ test_font(const char *filename)		// I - Font filename
     if (ttfGetExtents(font, 12.0f, strings[i], &extents))
     {
       testEndMessage(true, "%.1f %.1f %.1f %.1f", extents.left, extents.bottom, extents.right, extents.top);
+    }
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+
+    testBegin("ttfGetKernedExtents(\"%s\")", strings[i]);
+    if ((num_adjs = ttfGetKernedExtents(font, 12.0f, strings[i], &extents, sizeof(adjs) / sizeof(adjs[0]), adjs)) > 0)
+    {
+      testEndMessage(true, "%.1f %.1f %.1f %.1f, num_adjs=%u", extents.left, extents.bottom, extents.right, extents.top, (unsigned)num_adjs);
+      for (j = 0; j < num_adjs; j ++)
+      {
+        if (adjs[j] != 0.0)
+          testMessage("    adjs[%u]=%.3f", (unsigned)j, adjs[j]);
+      }
     }
     else
     {
@@ -404,13 +438,13 @@ test_font(const char *filename)		// I - Font filename
   }
 
   testBegin("ttfGetStyle");
-  if ((style = ttfGetStyle(font)) >= TTF_STYLE_NORMAL && style <= TTF_STYLE_ITALIC)
+  if ((style = ttfGetStyle(font)) >= TTF_STYLE_NORMAL && style <= TTF_STYLE_OBLIQUE)
   {
     testEndMessage(true, "%s", styles[style]);
   }
   else
   {
-    testEnd(false);
+    testEndMessage(false, "Unknown/%d", style);
     errors ++;
   }
 
@@ -462,6 +496,11 @@ test_font(const char *filename)		// I - Font filename
   testBegin("ttfIsFixedPitch");
   testEndMessage(true, "%s", ttfIsFixedPitch(font) ? "true" : "false");
 
+  // Return immediately if we don't have the original filename...
+  if (!filename)
+    return (errors);
+
+  // Delete the first font and try getting it from memory...
   ttfDelete(font);
   font = NULL;
 
