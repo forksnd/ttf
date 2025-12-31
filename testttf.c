@@ -160,7 +160,9 @@ list_fonts(bool verbose)		// I - Be verbose?
 		end;			// End time
   char		name[256];		// Font name
   int		errors = 0;		// Number of errors
-
+  const char	*test_mono = NULL,	// Test monospaced family name...
+		*test_sans = NULL,	// Test sans-serif family name...
+		*test_serif = NULL;	// Test serif family name
 
   start = time(NULL);
   testBegin("ttfCacheCreate");
@@ -174,7 +176,42 @@ list_fonts(bool verbose)		// I - Be verbose?
 
   for (i = 0; i < num_fonts; i ++)
   {
-    format_name(name, sizeof(name), ttfCacheGetFamily(cache, i), ttfCacheGetStyle(cache, i), ttfCacheGetWeight(cache, i), ttfCacheGetStretch(cache, i));
+    const char *family = ttfCacheGetFamily(cache, i);
+					// Family name
+
+    if (!test_mono)
+    {
+      if (!strcasecmp(family, "Courier"))
+        test_mono = "Courier";
+      else if (!strcasecmp(family, "Courier New"))
+        test_mono = "Courier New";
+      else if (!strcasecmp(family, "DejaVu Sans Mono"))
+        test_mono = "DejaVu Sans Mono";
+    }
+
+    if (!test_sans)
+    {
+      if (!strcasecmp(family, "Arial"))
+        test_sans = "Arial";
+      else if (!strcasecmp(family, "DejaVu Sans"))
+        test_sans = "DejaVu Sans";
+      else if (!strcasecmp(family, "Helvetica"))
+        test_sans = "Helvetica";
+      else if (!strcasecmp(family, "Helvetica Neue"))
+        test_sans = "Helvetica Neue";
+    }
+
+    if (!test_serif)
+    {
+      if (!strcasecmp(family, "DejaVu Serif"))
+        test_serif = "DejaVu Serif";
+      else if (!strcasecmp(family, "Times Roman"))
+        test_serif = "Times Roman";
+      else if (!strcasecmp(family, "Times New Roman"))
+        test_serif = "Times New Roman";
+    }
+
+    format_name(name, sizeof(name), family, ttfCacheGetStyle(cache, i), ttfCacheGetWeight(cache, i), ttfCacheGetStretch(cache, i));
 
     if (!verbose)
       testMessage("    %s", name);
@@ -184,20 +221,23 @@ list_fonts(bool verbose)		// I - Be verbose?
       testMessage("    %s: %s", ttfCacheGetFilename(cache, i), name);
   }
 
-#if _WIN32
-  errors += test_find_font(cache, "Arial", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
-  errors += test_find_font(cache, "Arial", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  if (test_mono)
+  {
+    errors += test_find_font(cache, test_mono, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+    errors += test_find_font(cache, test_mono, TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  }
 
-#elif defined(__APPLE__)
-  errors += test_find_font(cache, "Helvetica Neue", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
-  errors += test_find_font(cache, "Helvetica Neue", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  if (test_sans)
+  {
+    errors += test_find_font(cache, test_sans, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+    errors += test_find_font(cache, test_sans, TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  }
 
-#else
-  errors += test_find_font(cache, "Helvetica", TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
-  errors += test_find_font(cache, "Helvetica", TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
-#endif // _WIN32
-
-  errors += test_find_font(cache, "Courier", TTF_STYLE_OBLIQUE, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+  if (test_serif)
+  {
+    errors += test_find_font(cache, test_serif, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC);
+    errors += test_find_font(cache, test_serif, TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
+  }
 
   return (errors);
 }
