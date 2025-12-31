@@ -21,7 +21,7 @@ AC_PREREQ([2.70])
 
 
 dnl Package name and version...
-AC_INIT([ttf], [1.1.0], [https://github.com/michaelrsweet/ttf/issues], [TTF], [https://www.msweet.org/ttf])
+AC_INIT([ttf], [1.1.1], [https://github.com/michaelrsweet/ttf/issues], [TTF], [https://www.msweet.org/ttf])
 
 TTF_VERSION="AC_PACKAGE_VERSION"
 TTF_VERSION_MAJOR="`echo AC_PACKAGE_VERSION | awk -F. '{print $1}'`"
