@@ -10,7 +10,11 @@
 //
 
 #include "ttf-private.h"
-#include <dirent.h>
+#if _WIN32
+#  include <windows.h>
+#else
+#  include <dirent.h>
+#endif // _WIN32
 
 
 //
@@ -812,8 +816,14 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
                int         depth,	// I - Directory depth
                bool        scanonly)	// I - Only scan for fonts
 {
+#if _WIN32
+  HANDLE	dir;			// Directory handle
+  WIN32_FIND_DATAA dent;		// Directory entry data
+  char		dname[1024];		// Directory name
+#else
   DIR		*dir;			// Directory pointer
   struct dirent	*dent;			// Directory entry
+#endif // _WIN32
   char		filename[1024],		// Filename
 		*ext;			// Extension
   ttf_t		*font;			// Font
@@ -821,6 +831,23 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
   time_t	mtime = 0;		// Newest mtime
 
 
+#if _WIN32
+  snprintf(dname, sizeof(dname), "%s\\*", d);
+
+  if ((dir = FindFirstFileA(dname, &dent)) == INVALID_HANDLE_VALUE)
+    return (mtime);
+
+  do
+  {
+    if (dent.filename[0] == '.')
+      continue;
+
+    snprintf(filename, sizeof(filename), "%s/%s", d, dent.filename);
+
+    if (stat(filename, &info))
+      continue;
+
+#else
   if ((dir = opendir(d)) == NULL)
     return (mtime);
 
@@ -833,6 +860,7 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
 
     if (lstat(filename, &info))
       continue;
+#endif // _WIN32
 
     if (info.st_mtime > mtime)
       mtime = info.st_mtime;
@@ -892,8 +920,14 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
       }
     }
   }
+#if _WIN32
+  while (FindNextFileA(dir, &dent));
 
+  FindClose(dir);
+
+#else
   closedir(dir);
+#endif // _WIN32
 
   return (mtime);
 }
