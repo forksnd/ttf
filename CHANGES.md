@@ -1,6 +1,12 @@
 Changes in TTF
 ==============
 
+v1.1.1 - YYYY-MM-DD
+-------------------
+
+- Fixed some clang-reported issues.
+
+
 v1.1.0 - 2025-12-31
 -------------------
 

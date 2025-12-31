@@ -255,7 +255,7 @@ bool					// O - `true` if font contains the character, `false` otherwise
 ttfContainsChar(ttf_t *font,		// I - Font
                 int   ch)		// I - Unicode character
 {
-  return (font && ch >= 0 && ch < font->num_cmap && font->cmap[ch] > 0);
+  return (font && ch >= 0 && ch < (int)font->num_cmap && font->cmap[ch] > 0);
 }
 
 
@@ -674,8 +674,8 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
     {
       // This is the first character in the string so save that as the left
       // glyph...
-      if (ch < font->num_cmap)
-        key.left = font->cmap[ch];
+      if (ch < (int)font->num_cmap)
+        key.left = (unsigned short)font->cmap[ch];
       else
         key.left = 0;
 
@@ -689,8 +689,8 @@ ttfGetKernedExtents(ttf_t      *font,	// I - Font
     else if (font->num_kerning)
     {
       // Lookup kerning information for the current pair of characters...
-      if (ch < font->num_cmap)
-        key.right = font->cmap[ch];
+      if (ch < (int)font->num_cmap)
+        key.right = (unsigned short)font->cmap[ch];
       else
         key.right = 0;
 
@@ -2065,21 +2065,21 @@ read_kern(ttf_t *font)			// I - Font
   TTF_DEBUG("read_kern(font=%p)\n", (void *)font);
 
   // Find the kern table...
-  if ((length = seek_table(font, TTF_OFF_kern, 0, false)) == 0)
+  if (seek_table(font, TTF_OFF_kern, 0, false) == 0)
   {
     TTF_DEBUG("read_kern: No kern table, returning true.\n");
     return (true);
   }
 
   // Get the version and number of tables...
-  if ((version = read_ushort(font)) != 0)
+  if ((version = (unsigned)read_ushort(font)) != 0)
   {
     TTF_DEBUG("read_kern: Unsupported kern table version %d, returning false.\n", version);
 //    errorf(font, "Unsupported kern table version %d.", version);
     return (false);
   }
 
-  if ((nTables = read_ushort(font)) == 0)
+  if ((nTables = (unsigned)read_ushort(font)) == 0)
   {
     TTF_DEBUG("read_kern: No subtables in kern table, returning false.\n");
     errorf(font, "No subtables in kern table.");
@@ -2091,14 +2091,14 @@ read_kern(ttf_t *font)			// I - Font
   // Then read all the tables...
   for (i = 0; i < nTables; i ++)
   {
-    if ((version = read_ushort(font)) != 0)
+    if ((version = (unsigned)read_ushort(font)) != 0)
     {
       TTF_DEBUG("read_kern: Unsupported kern subtable version %d, returning false.\n", version);
       errorf(font, "Unsupported kern subtable version %d.", version);
       return (false);
     }
 
-    if ((length = read_ushort(font)) == 0)
+    if ((length = (unsigned)read_ushort(font)) == 0)
     {
       TTF_DEBUG("read_kern: Empty kern subtable, returning false.\n");
       errorf(font, "Empty kern subtable.");
@@ -2107,7 +2107,7 @@ read_kern(ttf_t *font)			// I - Font
 
     TTF_DEBUG("read_kern: length[%u]=%u\n", i, length);
 
-    if ((coverage = read_ushort(font)) != 1)
+    if ((coverage = (unsigned)read_ushort(font)) != 1)
     {
       char	buffer[1024];		// Read buffer
       unsigned	bytes;			// Bytes read
@@ -2130,7 +2130,7 @@ read_kern(ttf_t *font)			// I - Font
       continue;
     }
 
-    if ((nPairs = read_ushort(font)) == 0)
+    if ((nPairs = (unsigned)read_ushort(font)) == 0)
     {
       TTF_DEBUG("read_kern: No pairs in kern subtable, returning false.\n");
       errorf(font, "No pairs in kern subtable.");
@@ -2163,9 +2163,9 @@ read_kern(ttf_t *font)			// I - Font
     // Read the pairs...
     for (j = 0; j < nPairs; j ++)
     {
-      k->left  = read_ushort(font);
-      k->right = read_ushort(font);
-      k->adj   = read_short(font);
+      k->left  = (unsigned short)read_ushort(font);
+      k->right = (unsigned short)read_ushort(font);
+      k->adj   = (short)read_short(font);
       k ++;
     }
   }
