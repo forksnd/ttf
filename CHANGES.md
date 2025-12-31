@@ -1,7 +1,7 @@
 Changes in TTF
 ==============
 
-v1.1.0 - YYYY-MM-DD
+v1.1.0 - 2025-12-31
 -------------------
 
 - Added configure script for better build system compatibility.

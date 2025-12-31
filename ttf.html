@@ -308,6 +308,7 @@ span.string {
 <li><a href="#ttfGetExtents">ttfGetExtents</a></li>
 <li><a href="#ttfGetFamily">ttfGetFamily</a></li>
 <li><a href="#ttfGetItalicAngle">ttfGetItalicAngle</a></li>
+<li><a href="#ttfGetKernedExtents">ttfGetKernedExtents</a></li>
 <li><a href="#ttfGetMaxChar">ttfGetMaxChar</a></li>
 <li><a href="#ttfGetMinChar">ttfGetMinChar</a></li>
 <li><a href="#ttfGetNumFonts">ttfGetNumFonts</a></li>
@@ -819,6 +820,35 @@ values are scaled using the specified font size.</p>
 </tbody></table>
 <h4 class="returnvalue">Return Value</h4>
 <p class="description">Angle in degrees</p>
+<h3 class="function"><a id="ttfGetKernedExtents">ttfGetKernedExtents</a></h3>
+<p class="description">Get the kerned extents of a string.</p>
+<p class="code">
+size_t ttfGetKernedExtents(<a href="#ttf_t">ttf_t</a> *font, <span class="reserved">float</span> size, <span class="reserved">const</span> <span class="reserved">char</span> *s, <a href="#ttf_rect_t">ttf_rect_t</a> *extents, size_t max_adjs, <span class="reserved">double</span> *adjs);</p>
+<h4 class="parameters">Parameters</h4>
+<table class="list"><tbody>
+<tr><th>font</th>
+<td class="description">Font</td></tr>
+<tr><th>size</th>
+<td class="description">Font size</td></tr>
+<tr><th>s</th>
+<td class="description">String</td></tr>
+<tr><th>extents</th>
+<td class="description">Kerned extents of string</td></tr>
+<tr><th>max_adjs</th>
+<td class="description">Maximum number of kerning adjustments</td></tr>
+<tr><th>adjs</th>
+<td class="description">Array of kerning adjustments</td></tr>
+</tbody></table>
+<h4 class="returnvalue">Return Value</h4>
+<p class="description">Number of kerned pairs</p>
+<h4 class="discussion">Discussion</h4>
+<p class="discussion">This function computes the kerned extents of the UTF-8 string &quot;s&quot; when
+rendered using the specified font &quot;font&quot; and size &quot;size&quot;.  The &quot;extents&quot;
+argument is a pointer to a <code>ttf_rect_t</code> structure that is filled with the
+extents of a kerned rendering of the string with no rewriting applied.  The
+&quot;adjs&quot; argument specifies and array of <code>double</code> values up to &quot;max_adjs&quot; long
+containing the kerning adjustments between each pair of characters.  The
+extent and adjustment values are scaled using the specified font size.</p>
 <h3 class="function"><a id="ttfGetMaxChar">ttfGetMaxChar</a></h3>
 <p class="description">Get the last character in the font.</p>
 <p class="code">

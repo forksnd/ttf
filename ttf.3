@@ -1,4 +1,4 @@
-.TH ttf 3 "ttf - functions" "2025-12-05" "ttf - functions"
+.TH ttf 3 "ttf - functions" "2025-12-31" "ttf - functions"
 .SH NAME
 ttf \- ttf - functions
 .SH Introduction
@@ -515,6 +515,27 @@ float  ttfGetItalicAngle (
     ttf_t *font
 );
 .fi
+.SS ttfGetKernedExtents
+Get the kerned extents of a string.
+.PP
+.nf
+size_t  ttfGetKernedExtents (
+    ttf_t *font,
+    float size,
+    const char *s,
+    ttf_rect_t *extents,
+    size_t max_adjs,
+    double *adjs
+);
+.fi
+.PP
+This function computes the kerned extents of the UTF-8 string "s" when
+rendered using the specified font "font" and size "size".  The "extents"
+argument is a pointer to a \fBttf_rect_t\fR structure that is filled with the
+extents of a kerned rendering of the string with no rewriting applied.  The
+"adjs" argument specifies and array of \fBdouble\fR values up to "max_adjs" long
+containing the kerning adjustments between each pair of characters.  The
+extent and adjustment values are scaled using the specified font size.
 .SS ttfGetMaxChar
 Get the last character in the font.
 .PP
