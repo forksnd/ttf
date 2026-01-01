@@ -839,10 +839,10 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
 
   do
   {
-    if (dent.filename[0] == '.')
+    if (dent.cFileName[0] == '.')
       continue;
 
-    snprintf(filename, sizeof(filename), "%s/%s", d, dent.filename);
+    snprintf(filename, sizeof(filename), "%s/%s", d, dent.cFileName);
 
     if (stat(filename, &info))
       continue;
@@ -876,8 +876,13 @@ ttf_load_fonts(ttf_cache_t *cache,	// I - Font cache
     if (scanonly)
       continue;
 
+#if _WIN32
+    if ((ext = strrchr(dent.cFileName, '.')) == NULL)
+      continue;
+#else
     if ((ext = strrchr(dent->d_name, '.')) == NULL)
       continue;
+#endif // _WIN32
 
     if (strcmp(ext, ".otc") && strcmp(ext, ".otf") && strcmp(ext, ".ttc") && strcmp(ext, ".ttf"))
       continue;
