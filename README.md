@@ -4,7 +4,7 @@ TTF - TrueType/OpenType Font Library
 ![Version](https://img.shields.io/github/v/release/michaelrsweet/ttf?include_prereleases)
 ![Apache 2.0](https://img.shields.io/github/license/michaelrsweet/ttf)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/michaelrsweet/ttf/build.yml)](https://github.com/michaelrsweet/ttf/actions/workflows/build.yml)
-[![Coverity Scan Status](https://img.shields.io/coverity/scan/22385.svg)](https://scan.coverity.com/projects/michaelrsweet-ttf)
+[![Coverity Scan Status](https://img.shields.io/coverity/scan/32614.svg)](https://scan.coverity.com/projects/michaelrsweet-ttf)
 
 TTF is a simple C library for using TrueType and OpenType font files.
 
