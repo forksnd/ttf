@@ -177,6 +177,7 @@ testttf:	libttf.a testttf.o
 # Library
 libttf.a:	$(LIBOBJS)
 	echo Creating $@...
+	$(RM) $@
 	$(AR) $(ARFLAGS) $@ $(LIBOBJS)
 	$(RANLIB) $@
 
