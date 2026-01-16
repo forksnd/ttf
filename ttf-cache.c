@@ -147,11 +147,11 @@ ttfCacheCreate(const char   *appname,	// I - Application name
   size_t	i,			// Looping var
 		num_dirs = 0;		// Number of directories
   const char	*dirs[5];		// Directories
-  char		dname[1024];		// Directory filename
 #if _WIN32
   const char	*home = getenv("USERPROFILE");
 					// Home directory
 #else
+  char		dname[1024];		// Directory filename
   const char	*home = getenv("HOME");	// Home directory
 #endif // _WIN32
   struct stat	cinfo;			// Cache file information
