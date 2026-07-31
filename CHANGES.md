@@ -5,6 +5,7 @@ v1.1.1 - YYYY-MM-DD
 -------------------
 
 - Added tests for `ttfGetCMap`.
+- Added missing implementation of `ttfGetFilename`.
 - Updated the range limit check in `ttfGetWidth`.
 - Fixed support for extended planes in Unicode text.
 - Fixed some clang-reported issues.

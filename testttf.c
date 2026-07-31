@@ -339,6 +339,15 @@ test_font(const char *filename,		// I - Font filename or `NULL`
       return (1);
   }
 
+  testBegin("ttfGetFilename");
+  value = ttfGetFilename(font);
+  if ((value != NULL) == (filename != NULL))
+    testEnd(true);
+  else if (value)
+    testEndMessage(false, "Got filename \"%s\" instead of NULL.", value);
+  else
+    testEndMessage(false, "Got NULL instead of filename \"%s\".", filename);
+
   testBegin("ttfContainsChar(' ')");
   testEnd(ttfContainsChar(font, ' '));
 

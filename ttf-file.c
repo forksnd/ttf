@@ -117,6 +117,7 @@ struct _ttf_s
 {
   _ttf_read_cb_t read_cb;		// Read callback
   _ttf_seek_cb_t seek_cb;		// Seek callback
+  char		*filename;		// Filename (if available)
   int		file_fd;		// File descriptor for ttfCreate
   const char	*data;			// Font data for ttfCreateData
   size_t	data_size;		// Size of font data for ttfCreateData
@@ -398,6 +399,8 @@ ttfDelete(ttf_t *font)			// I - Font
   if (font->file_fd >= 0)
     close(font->file_fd);
 
+  free(font->filename);
+
   // Free all memory used...
   free(font->copyright);
   free(font->family);
@@ -592,6 +595,17 @@ const char *				// O - Family name
 ttfGetFamily(ttf_t *font)		// I - Font
 {
   return (font ? font->family : NULL);
+}
+
+
+//
+// 'ttfGetFilename()' - Get the filename of the font, if available.
+//
+
+const char *				// O - Filename or `NULL` if it was loaded from memory
+ttfGetFilename(ttf_t *font)		// I - Font
+{
+  return (font ? font->filename : NULL);
 }
 
 
@@ -1060,8 +1074,9 @@ create_font(const char   *filename,	// I - Filename or `NULL`
 
     TTF_DEBUG("create_font: file_fd=%d\n", font->file_fd);
 
-    font->read_cb   = fd_read_cb;
-    font->seek_cb   = fd_seek_cb;
+    font->read_cb  = fd_read_cb;
+    font->seek_cb  = fd_seek_cb;
+    font->filename = strdup(filename);
   }
   else
   {
