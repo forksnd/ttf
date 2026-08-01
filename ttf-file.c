@@ -154,6 +154,7 @@ struct _ttf_s
   float		italic_angle;		// Angle of italic text
   ttf_stretch_t	stretch;		// Font stretch value
   ttf_style_t	style;			// Font style
+  ttf_class_t	family_class;		// Family class
 };
 
 typedef struct _ttf_off_cmap4_s		// Format 4 cmap table
@@ -211,7 +212,8 @@ typedef struct _ttf_off_os_2_s		// OS/2 information
   short		sTypoAscender,		// Ascender
 		sTypoDescender,		// Descender
 		sxHeight,		// xHeight
-		sCapHeight;		// CapHeight
+		sCapHeight,		// CapHeight
+		sFamilyClass;		// Family class
 } _ttf_off_os_2_t;
 
 typedef struct _ttf_off_post_s		// PostScript information
@@ -595,6 +597,17 @@ const char *				// O - Family name
 ttfGetFamily(ttf_t *font)		// I - Font
 {
   return (font ? font->family : NULL);
+}
+
+
+//
+// 'ttfGetFamilyClass()' - Get the family class of a font.
+//
+
+ttf_class_t				// O - Family class or `TTF_CLASS_UNSPEC`
+ttfGetFamilyClass(ttf_t *font)		// I - Font
+{
+  return (font ? font->family_class : TTF_CLASS_UNSPEC);
 }
 
 
@@ -1181,6 +1194,28 @@ create_font(const char   *filename,	// I - Filename or `NULL`
 
     font->cap_height = os_2.sCapHeight;
     font->x_height   = os_2.sxHeight;
+
+    static const ttf_class_t family_classes[] =
+    {
+      TTF_CLASS_NONE,			// 0 - No classification
+      TTF_CLASS_OLDSTYLE_SERIFS,	// 1 - Oldstyle serifs
+      TTF_CLASS_TRANSITIONAL_SERIFS,	// 2 - Transitional serifs
+      TTF_CLASS_MODERN_SERIFS,		// 3 - Modern serifs
+      TTF_CLASS_CLARENDON_SERIFS,	// 4 - Clarendon serifs
+      TTF_CLASS_SLAB_SERIFS,		// 5 - Slab serifs
+      TTF_CLASS_NONE,			// 6 - Reserved
+      TTF_CLASS_FREEFORM_SERIFS,		// 7 - Freeform serifs
+      TTF_CLASS_SANS_SERIF,		// 8 - Sans serif
+      TTF_CLASS_ORNAMENTALS,		// 9 - Ornamentals
+      TTF_CLASS_SCRIPTS,			// 10 - Scripts
+      TTF_CLASS_NONE,			// 11 - Reserved
+      TTF_CLASS_SYMBOLIC,		// 12 - Symbolic
+      TTF_CLASS_NONE,			// 13 - Reserved
+      TTF_CLASS_NONE,			// 14 - Reserved
+      TTF_CLASS_NONE			// 15 - Miscellaneous
+    };
+
+    font->family_class = family_classes[(os_2.sFamilyClass >> 8) & 0xff];
   }
   else
   {
@@ -2353,7 +2388,7 @@ read_os_2(ttf_t           *font,	// I - Font
   /* ySuperscriptYOffset */ read_short(font);
   /* yStrikeoutSize */      read_short(font);
   /* yStrikeoutOffset */    read_short(font);
-  /* sFamilyClass */        read_short(font);
+  os_2->sFamilyClass      = (short)read_short(font);
   /* panose[10] */
   if ((font->read_cb)(font, panose, sizeof(panose)) != sizeof(panose))
     return (false);

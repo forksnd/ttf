@@ -154,12 +154,17 @@ static int				// O - Number of errors
 list_fonts(bool verbose)		// I - Be verbose?
 {
   ttf_cache_t	*cache;			// Font cache
+  ttf_cache_t	*matches;		// Search results
+  ttf_t		*font;			// Font
   size_t	i,			// Looping var
 		num_fonts;		// Number of fonts
   time_t	start,			// Start time
 		end;			// End time
   char		name[256];		// Font name
   int		errors = 0;		// Number of errors
+  ttf_class_t	family_class;		// Font family class
+  bool		has_sans = false,	// Have a sans-serif font?
+		has_serif = false;	// Have a serif font?
   const char	*test_mono = NULL,	// Test monospaced family name...
 		*test_sans = NULL,	// Test sans-serif family name...
 		*test_serif = NULL;	// Test serif family name
@@ -211,6 +216,24 @@ list_fonts(bool verbose)		// I - Be verbose?
         test_serif = "Times New Roman";
     }
 
+    family_class = ttfCacheGetFamilyClass(cache, i);
+
+    if (family_class & TTF_CLASS_SANS_SERIF)
+    {
+      has_sans = true;
+
+      if (!test_sans)
+        test_sans = family;
+    }
+
+    if (family_class & (TTF_CLASS_OLDSTYLE_SERIFS | TTF_CLASS_TRANSITIONAL_SERIFS | TTF_CLASS_MODERN_SERIFS | TTF_CLASS_CLARENDON_SERIFS | TTF_CLASS_SLAB_SERIFS | TTF_CLASS_FREEFORM_SERIFS))
+    {
+      has_serif = true;
+
+      if (!test_serif)
+        test_serif = family;
+    }
+
     format_name(name, sizeof(name), family, ttfCacheGetStyle(cache, i), ttfCacheGetWeight(cache, i), ttfCacheGetStretch(cache, i));
 
     if (!verbose)
@@ -239,6 +262,107 @@ list_fonts(bool verbose)		// I - Be verbose?
     errors += test_find_font(cache, test_serif, TTF_STYLE_NORMAL, TTF_WEIGHT_700, TTF_STRETCH_UNSPEC);
   }
 
+  if (num_fonts > 0)
+  {
+    testBegin("ttfCacheSearch(TTF_CLASS_UNSPEC)");
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0)
+      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+
+    ttfCacheDelete(matches);
+  }
+
+  if (has_sans)
+  {
+    testBegin("ttfCacheSearch(TTF_CLASS_SANS_SERIF)");
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_SANS_SERIF, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0 && (ttfCacheGetFamilyClass(matches, 0) & TTF_CLASS_SANS_SERIF))
+      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+
+    ttfCacheDelete(matches);
+  }
+
+  if (has_serif)
+  {
+    static const ttf_class_t serif_classes = TTF_CLASS_OLDSTYLE_SERIFS | TTF_CLASS_TRANSITIONAL_SERIFS | TTF_CLASS_MODERN_SERIFS | TTF_CLASS_CLARENDON_SERIFS | TTF_CLASS_SLAB_SERIFS | TTF_CLASS_FREEFORM_SERIFS;
+
+    testBegin("ttfCacheSearch(serif classes)");
+    if ((matches = ttfCacheSearch(cache, serif_classes, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0 && (ttfCacheGetFamilyClass(matches, 0) & serif_classes))
+      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+
+    ttfCacheDelete(matches);
+  }
+
+  if (test_mono)
+  {
+    testBegin("ttfCacheSearch(fixed-pitch)");
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/true)) != NULL && ttfCacheGetNumFonts(matches) > 0)
+    {
+      bool all_mono = true;
+
+      for (i = 0; i < ttfCacheGetNumFonts(matches); i ++)
+      {
+        if (!ttfCacheIsFixedPitch(matches, i))
+        {
+          all_mono = false;
+          break;
+        }
+      }
+
+      if (all_mono)
+        testEndMessage(true, "%lu", (unsigned long)ttfCacheGetNumFonts(matches));
+      else
+      {
+        testEnd(false);
+        errors ++;
+      }
+    }
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+
+    ttfCacheDelete(matches);
+  }
+
+  testBegin("ttfCacheIsFixedPitch");
+  {
+    bool	all_match = true;	// All cached flags match the fonts?
+
+    for (i = 0; i < num_fonts; i ++)
+    {
+      ttf_t *cfont = ttfCacheGetFont(cache, i);
+
+      if (cfont && ttfCacheIsFixedPitch(cache, i) != ttfIsFixedPitch(cfont))
+      {
+        all_match = false;
+        break;
+      }
+    }
+
+    if (all_match)
+      testEndMessage(true, "%lu fonts", (unsigned long)num_fonts);
+    else
+    {
+      testEnd(false);
+      errors ++;
+    }
+  }
+
   return (errors);
 }
 
@@ -263,7 +387,7 @@ test_find_font(ttf_cache_t   *cache,	// I - Font cache
   {
     testEndMessage(true, "%s", format_name(name, sizeof(name), ttfGetFamily(font), ttfGetStyle(font), ttfGetWeight(font), ttfGetStretch(font)));
 
-    return (test_font(/*filename*/NULL, font));
+    return (test_font(ttfGetFilename(font), font));
   }
   else
   {
@@ -298,6 +422,8 @@ test_font(const char *filename,		// I - Font filename or `NULL`
   size_t	num_fonts;		// Number of fonts
   ttf_style_t	style;			// Font style
   ttf_weight_t	weight;			// Font weight
+  ttf_class_t	family_class;		// Font family class
+  bool		reload;			// Reload the font from memory?
   const int	*cmap;			// CMap table
   size_t	num_cmap;		// Number of CMap entries
   static const char * const stretches[] =
@@ -329,6 +455,8 @@ test_font(const char *filename,		// I - Font filename or `NULL`
     "TTF_STYLE_OBLIQUE"
   };
 
+
+  reload = (filename != NULL && font == NULL);
 
   if (filename && !font)
   {
@@ -532,6 +660,17 @@ test_font(const char *filename,		// I - Font filename or `NULL`
     errors ++;
   }
 
+  testBegin("ttfGetFamilyClass");
+  if (!((family_class = ttfGetFamilyClass(font)) & ~(ttf_class_t)0x07ff))
+  {
+    testEndMessage(true, "0x%04x", (unsigned)family_class);
+  }
+  else
+  {
+    testEndMessage(false, "0x%04x", (unsigned)family_class);
+    errors ++;
+  }
+
   testBegin("ttfGetWidth(' ')");
 
   if ((intvalue = ttfGetWidth(font, ' ')) > 0)
@@ -558,8 +697,9 @@ test_font(const char *filename,		// I - Font filename or `NULL`
   testBegin("ttfIsFixedPitch");
   testEndMessage(true, "%s", ttfIsFixedPitch(font) ? "true" : "false");
 
-  // Return immediately if we don't have the original filename...
-  if (!filename)
+  // Return immediately if we didn't create the font here (e.g., it was loaded
+  // from the font cache and is managed by the caller)...
+  if (!reload)
     return (errors);
 
   // Delete the first font and try getting it from memory...

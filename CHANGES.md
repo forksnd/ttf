@@ -4,6 +4,12 @@ Changes in TTF
 v1.1.1 - YYYY-MM-DD
 -------------------
 
+- Added `ttf_class_t` type and `ttfGetFamilyClass` function for the OS/2
+  family class metadata (Issue #10)
+- Added `ttfCacheGetFamilyClass` and `ttfCacheSearch` functions for finding fonts
+  by family class (Issue #10)
+- Added `ttfCacheIsFixedPitch` function and cached the fixed-pitch value so
+  monospace searches don't need to load each font
 - Added tests for `ttfGetCMap`.
 - Added missing implementation of `ttfGetFilename`.
 - Updated the range limit check in `ttfGetWidth`.
