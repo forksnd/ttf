@@ -35,14 +35,14 @@
 typedef struct _ttf_cfont_s		// Cached font
 {
   ttf_t		*font;			// Font, if loaded
-  char          *filename,              // Filename or URL
-                *family;                // Family
-  size_t        idx;                    // Index inside collection
-  ttf_stretch_t stretch;                // Stretch
-  ttf_style_t   style;                  // Style
-  ttf_weight_t  weight;                 // Weight
-  ttf_class_t	family_class;		// Family class
-  bool		is_fixed_pitch;		// Is fixed-pitch (monospace)?
+  char		*filename,		// Filename or URL
+		*family;		// Family
+  unsigned	idx;			// Index inside collection
+  int		stretch:4;		// Stretch
+  int		style:2;		// Style
+  int		weight:10;		// Weight
+  unsigned	family_class:12;	// Family class
+  unsigned	is_fixed_pitch:1;	// Fixed-pitch/monospace?
 } _ttf_cfont_t;
 
 
@@ -787,7 +787,7 @@ ttf_load_cache(ttf_cache_t *cache)	// I - Font cache
   _ttf_cfont_t	*font;			// Current cached font
   char		line[1024],		// Header/attributes line
 		*lineptr;		// Pointer into line
-	long		num_fonts,	// Number of fonts in cache
+  long		num_fonts,		// Number of fonts in cache
 		idx,			// Font index in a file
 		stretch,		// Font stretch
 		style,			// Font style
@@ -921,10 +921,10 @@ ttf_load_cache(ttf_cache_t *cache)	// I - Font cache
       goto error;
     }
 
-    font->stretch     = (ttf_stretch_t)stretch;
-    font->style       = (ttf_style_t)style;
-    font->weight      = (ttf_weight_t)weight;
-    font->family_class = (ttf_class_t)family_class;
+    font->stretch        = (ttf_stretch_t)stretch;
+    font->style          = (ttf_style_t)style;
+    font->weight         = (ttf_weight_t)weight;
+    font->family_class   = (ttf_class_t)family_class;
     font->is_fixed_pitch = fixed_pitch ? true : false;
 
     font ++;

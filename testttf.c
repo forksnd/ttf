@@ -156,7 +156,8 @@ list_fonts(bool verbose)		// I - Be verbose?
   ttf_cache_t	*cache;			// Font cache
   ttf_cache_t	*matches;		// Search results
   size_t	i,			// Looping var
-		num_fonts;		// Number of fonts
+		num_fonts,		// Number of fonts
+		num_matches;		// Number of matching fonts
   time_t	start,			// Start time
 		end;			// End time
   char		name[256];		// Font name
@@ -265,8 +266,22 @@ list_fonts(bool verbose)		// I - Be verbose?
   if (num_fonts > 0)
   {
     testBegin("ttfCacheSearch(TTF_CLASS_UNSPEC)");
-    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0)
-      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && (num_matches = ttfCacheGetNumFonts(matches)) > 0)
+    {
+      testEndMessage(true, "%lu fonts", (unsigned long)num_matches);
+
+      for (i = 0; i < num_matches; i ++)
+      {
+	format_name(name, sizeof(name), ttfCacheGetFamily(matches, i), ttfCacheGetStyle(matches, i), ttfCacheGetWeight(matches, i), ttfCacheGetStretch(matches, i));
+
+	if (!verbose)
+	  testMessage("    %s", name);
+	else if (ttfCacheGetIndex(matches, i) > 0)
+	  testMessage("    %s(%u): %s", ttfCacheGetFilename(matches, i), (unsigned)ttfCacheGetIndex(matches, i), name);
+	else
+	  testMessage("    %s: %s", ttfCacheGetFilename(matches, i), name);
+      }
+    }
     else
     {
       testEnd(false);
@@ -279,8 +294,22 @@ list_fonts(bool verbose)		// I - Be verbose?
   if (has_sans)
   {
     testBegin("ttfCacheSearch(TTF_CLASS_SANS_SERIF)");
-    if ((matches = ttfCacheSearch(cache, TTF_CLASS_SANS_SERIF, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0 && (ttfCacheGetFamilyClass(matches, 0) & TTF_CLASS_SANS_SERIF))
-      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_SANS_SERIF, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && (num_matches = ttfCacheGetNumFonts(matches)) > 0 && (ttfCacheGetFamilyClass(matches, 0) & TTF_CLASS_SANS_SERIF))
+    {
+      testEndMessage(true, "%lu fonts", (unsigned long)num_matches);
+
+      for (i = 0; i < num_matches; i ++)
+      {
+	format_name(name, sizeof(name), ttfCacheGetFamily(matches, i), ttfCacheGetStyle(matches, i), ttfCacheGetWeight(matches, i), ttfCacheGetStretch(matches, i));
+
+	if (!verbose)
+	  testMessage("    %s", name);
+	else if (ttfCacheGetIndex(matches, i) > 0)
+	  testMessage("    %s(%u): %s", ttfCacheGetFilename(matches, i), (unsigned)ttfCacheGetIndex(matches, i), name);
+	else
+	  testMessage("    %s: %s", ttfCacheGetFilename(matches, i), name);
+      }
+    }
     else
     {
       testEnd(false);
@@ -295,8 +324,22 @@ list_fonts(bool verbose)		// I - Be verbose?
     static const ttf_class_t serif_classes = TTF_CLASS_OLDSTYLE_SERIFS | TTF_CLASS_TRANSITIONAL_SERIFS | TTF_CLASS_MODERN_SERIFS | TTF_CLASS_CLARENDON_SERIFS | TTF_CLASS_SLAB_SERIFS | TTF_CLASS_FREEFORM_SERIFS;
 
     testBegin("ttfCacheSearch(serif classes)");
-    if ((matches = ttfCacheSearch(cache, serif_classes, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && ttfCacheGetNumFonts(matches) > 0 && (ttfCacheGetFamilyClass(matches, 0) & serif_classes))
-      testEndMessage(true, "%s", ttfCacheGetFamily(matches, 0));
+    if ((matches = ttfCacheSearch(cache, serif_classes, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/false)) != NULL && (num_matches = ttfCacheGetNumFonts(matches)) > 0 && (ttfCacheGetFamilyClass(matches, 0) & serif_classes))
+    {
+      testEndMessage(true, "%lu fonts", (unsigned long)num_matches);
+
+      for (i = 0; i < num_matches; i ++)
+      {
+	format_name(name, sizeof(name), ttfCacheGetFamily(matches, i), ttfCacheGetStyle(matches, i), ttfCacheGetWeight(matches, i), ttfCacheGetStretch(matches, i));
+
+	if (!verbose)
+	  testMessage("    %s", name);
+	else if (ttfCacheGetIndex(matches, i) > 0)
+	  testMessage("    %s(%u): %s", ttfCacheGetFilename(matches, i), (unsigned)ttfCacheGetIndex(matches, i), name);
+	else
+	  testMessage("    %s: %s", ttfCacheGetFilename(matches, i), name);
+      }
+    }
     else
     {
       testEnd(false);
@@ -309,11 +352,11 @@ list_fonts(bool verbose)		// I - Be verbose?
   if (test_mono)
   {
     testBegin("ttfCacheSearch(fixed-pitch)");
-    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/true)) != NULL && ttfCacheGetNumFonts(matches) > 0)
+    if ((matches = ttfCacheSearch(cache, TTF_CLASS_UNSPEC, TTF_STYLE_UNSPEC, TTF_WEIGHT_UNSPEC, TTF_STRETCH_UNSPEC, /*fixed_pitch*/true)) != NULL && (num_matches = ttfCacheGetNumFonts(matches)) > 0)
     {
-      bool all_mono = true;
+      bool all_mono = true;		// Are all matching fonts fixed pitch?
 
-      for (i = 0; i < ttfCacheGetNumFonts(matches); i ++)
+      for (i = 0; i < num_matches; i ++)
       {
         if (!ttfCacheIsFixedPitch(matches, i))
         {
@@ -323,7 +366,21 @@ list_fonts(bool verbose)		// I - Be verbose?
       }
 
       if (all_mono)
-        testEndMessage(true, "%lu", (unsigned long)ttfCacheGetNumFonts(matches));
+      {
+	testEndMessage(true, "%lu fonts", (unsigned long)num_matches);
+
+	for (i = 0; i < num_matches; i ++)
+	{
+	  format_name(name, sizeof(name), ttfCacheGetFamily(matches, i), ttfCacheGetStyle(matches, i), ttfCacheGetWeight(matches, i), ttfCacheGetStretch(matches, i));
+
+	  if (!verbose)
+	    testMessage("    %s", name);
+	  else if (ttfCacheGetIndex(matches, i) > 0)
+	    testMessage("    %s(%u): %s", ttfCacheGetFilename(matches, i), (unsigned)ttfCacheGetIndex(matches, i), name);
+	  else
+	    testMessage("    %s: %s", ttfCacheGetFilename(matches, i), name);
+	}
+      }
       else
       {
         testEnd(false);
