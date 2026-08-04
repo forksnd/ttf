@@ -155,7 +155,6 @@ list_fonts(bool verbose)		// I - Be verbose?
 {
   ttf_cache_t	*cache;			// Font cache
   ttf_cache_t	*matches;		// Search results
-  ttf_t		*font;			// Font
   size_t	i,			// Looping var
 		num_fonts;		// Number of fonts
   time_t	start,			// Start time
@@ -168,6 +167,7 @@ list_fonts(bool verbose)		// I - Be verbose?
   const char	*test_mono = NULL,	// Test monospaced family name...
 		*test_sans = NULL,	// Test sans-serif family name...
 		*test_serif = NULL;	// Test serif family name
+
 
   start = time(NULL);
   testBegin("ttfCacheCreate");

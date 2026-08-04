@@ -41,8 +41,8 @@ typedef struct _ttf_cfont_s		// Cached font
   ttf_stretch_t stretch;                // Stretch
   ttf_style_t   style;                  // Style
   ttf_weight_t  weight;                 // Weight
-  ttf_class_t   family_class;           // Family class
-  bool          is_fixed_pitch;         // Is fixed-pitch (monospace)?
+  ttf_class_t	family_class;		// Family class
+  bool		is_fixed_pitch;		// Is fixed-pitch (monospace)?
 } _ttf_cfont_t;
 
 

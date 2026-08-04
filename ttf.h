@@ -3,7 +3,7 @@
 //
 // https://www.msweet.org/ttf
 //
-// Copyright © 2018-2025 by Michael R Sweet.
+// Copyright © 2018-2026 by Michael R Sweet.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
 // information.
@@ -72,25 +72,22 @@ typedef enum ttf_class_e	// Family class bit values
   TTF_CLASS_UNSPEC = 0,		// Unspecified
   TTF_CLASS_NONE = 0x0001,	// No classification
   TTF_CLASS_OLDSTYLE_SERIFS = 0x0002,
-					// Old style serifs
+				// Old style serifs
   TTF_CLASS_TRANSITIONAL_SERIFS = 0x0004,
-					// Transitional serifs
+				// Transitional serifs
   TTF_CLASS_MODERN_SERIFS = 0x0008,
-					// Modern serifs
+				// Modern serifs
   TTF_CLASS_CLARENDON_SERIFS = 0x0010,
-					// Clarendon serifs
+				// Clarendon serifs
   TTF_CLASS_SLAB_SERIFS = 0x0020,
-					// Slab serifs
+				// Slab serifs
   TTF_CLASS_FREEFORM_SERIFS = 0x0040,
-					// Freeform serifs
-  TTF_CLASS_SANS_SERIF = 0x0080,
-					// Sans-serif
+				// Freeform serifs
+  TTF_CLASS_SANS_SERIF = 0x0080,// Sans-serif
   TTF_CLASS_ORNAMENTALS = 0x0100,
-					// Ornamentals
-  TTF_CLASS_SCRIPTS = 0x0200,
-					// Scripts
-  TTF_CLASS_SYMBOLIC = 0x0400
-					// Symbolic
+				// Ornamentals
+  TTF_CLASS_SCRIPTS = 0x0200,	// Scripts
+  TTF_CLASS_SYMBOLIC = 0x0400	// Symbolic
 } ttf_class_t;
 
 typedef struct ttf_rect_s	// Bounding rectangle
