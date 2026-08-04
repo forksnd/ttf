@@ -67,6 +67,32 @@ typedef enum ttf_weight_e	// Font weight
   TTF_WEIGHT_900 = 900		// Weight 900 (Black/Heavy)
 } ttf_weight_t;
 
+typedef enum ttf_class_e	// Family class bit values
+{
+  TTF_CLASS_UNSPEC = 0,		// Unspecified
+  TTF_CLASS_NONE = 0x0001,	// No classification
+  TTF_CLASS_OLDSTYLE_SERIFS = 0x0002,
+					// Old style serifs
+  TTF_CLASS_TRANSITIONAL_SERIFS = 0x0004,
+					// Transitional serifs
+  TTF_CLASS_MODERN_SERIFS = 0x0008,
+					// Modern serifs
+  TTF_CLASS_CLARENDON_SERIFS = 0x0010,
+					// Clarendon serifs
+  TTF_CLASS_SLAB_SERIFS = 0x0020,
+					// Slab serifs
+  TTF_CLASS_FREEFORM_SERIFS = 0x0040,
+					// Freeform serifs
+  TTF_CLASS_SANS_SERIF = 0x0080,
+					// Sans-serif
+  TTF_CLASS_ORNAMENTALS = 0x0100,
+					// Ornamentals
+  TTF_CLASS_SCRIPTS = 0x0200,
+					// Scripts
+  TTF_CLASS_SYMBOLIC = 0x0400
+					// Symbolic
+} ttf_class_t;
+
 typedef struct ttf_rect_s	// Bounding rectangle
 {
   float	left;			// Left offset
@@ -84,14 +110,17 @@ extern void		ttfCacheAdd(ttf_cache_t *cache, ttf_t *font, const char *filename);
 extern ttf_cache_t      *ttfCacheCreate(const char *appname, ttf_err_cb_t err_cb, void *err_data);
 extern void             ttfCacheDelete(ttf_cache_t *cache);
 extern ttf_t            *ttfCacheFind(ttf_cache_t *cache, const char *family, ttf_style_t style, ttf_weight_t weight, ttf_stretch_t stretch);
-extern const char       *ttfCacheGetFilename(ttf_cache_t *cache, size_t n);
 extern const char       *ttfCacheGetFamily(ttf_cache_t *cache, size_t n);
+extern ttf_class_t      ttfCacheGetFamilyClass(ttf_cache_t *cache, size_t n);
+extern const char       *ttfCacheGetFilename(ttf_cache_t *cache, size_t n);
+extern ttf_t            *ttfCacheGetFont(ttf_cache_t *cache, size_t n);
 extern size_t		ttfCacheGetIndex(ttf_cache_t *cache, size_t n);
+extern size_t           ttfCacheGetNumFonts(ttf_cache_t *cache);
 extern ttf_stretch_t    ttfCacheGetStretch(ttf_cache_t *cache, size_t n);
 extern ttf_style_t      ttfCacheGetStyle(ttf_cache_t *cache, size_t n);
 extern ttf_weight_t     ttfCacheGetWeight(ttf_cache_t *cache, size_t n);
-extern ttf_t            *ttfCacheGetFont(ttf_cache_t *cache, size_t n);
-extern size_t           ttfCacheGetNumFonts(ttf_cache_t *cache);
+extern bool             ttfCacheIsFixedPitch(ttf_cache_t *cache, size_t n);
+extern ttf_cache_t      *ttfCacheSearch(ttf_cache_t *cache, ttf_class_t family_class, ttf_style_t style, ttf_weight_t weight, ttf_stretch_t stretch, bool fixed_pitch);
 extern bool		ttfContainsChar(ttf_t *font, int ch);
 extern bool		ttfContainsChars(ttf_t *font, const char *s);
 extern ttf_t		*ttfCreate(const char *filename, size_t idx, ttf_err_cb_t err_cb, void *err_data);
@@ -107,6 +136,7 @@ extern const char	*ttfGetCopyright(ttf_t *font);
 extern int		ttfGetDescent(ttf_t *font);
 extern ttf_rect_t	*ttfGetExtents(ttf_t *font, float size, const char *s, ttf_rect_t *extents);
 extern const char	*ttfGetFamily(ttf_t *font);
+extern ttf_class_t	ttfGetFamilyClass(ttf_t *font);
 extern const char       *ttfGetFilename(ttf_t *ttf);
 extern float		ttfGetItalicAngle(ttf_t *font);
 extern size_t		ttfGetKernedExtents(ttf_t *font, float size, const char *s, ttf_rect_t *extents, size_t max_adjs, double *adjs);

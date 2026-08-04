@@ -287,6 +287,7 @@ span.string {
 <li><a href="#ttfCacheDelete">ttfCacheDelete</a></li>
 <li><a href="#ttfCacheFind">ttfCacheFind</a></li>
 <li><a href="#ttfCacheGetFamily">ttfCacheGetFamily</a></li>
+<li><a href="#ttfCacheGetFamilyClass">ttfCacheGetFamilyClass</a></li>
 <li><a href="#ttfCacheGetFilename">ttfCacheGetFilename</a></li>
 <li><a href="#ttfCacheGetFont">ttfCacheGetFont</a></li>
 <li><a href="#ttfCacheGetIndex">ttfCacheGetIndex</a></li>
@@ -294,6 +295,8 @@ span.string {
 <li><a href="#ttfCacheGetStretch">ttfCacheGetStretch</a></li>
 <li><a href="#ttfCacheGetStyle">ttfCacheGetStyle</a></li>
 <li><a href="#ttfCacheGetWeight">ttfCacheGetWeight</a></li>
+<li><a href="#ttfCacheIsFixedPitch">ttfCacheIsFixedPitch</a></li>
+<li><a href="#ttfCacheSearch">ttfCacheSearch</a></li>
 <li><a href="#ttfContainsChar">ttfContainsChar</a></li>
 <li><a href="#ttfContainsChars">ttfContainsChars</a></li>
 <li><a href="#ttfCreate">ttfCreate</a></li>
@@ -307,6 +310,7 @@ span.string {
 <li><a href="#ttfGetDescent">ttfGetDescent</a></li>
 <li><a href="#ttfGetExtents">ttfGetExtents</a></li>
 <li><a href="#ttfGetFamily">ttfGetFamily</a></li>
+<li><a href="#ttfGetFamilyClass">ttfGetFamilyClass</a></li>
 <li><a href="#ttfGetItalicAngle">ttfGetItalicAngle</a></li>
 <li><a href="#ttfGetKernedExtents">ttfGetKernedExtents</a></li>
 <li><a href="#ttfGetMaxChar">ttfGetMaxChar</a></li>
@@ -323,6 +327,7 @@ span.string {
 </ul></li>
 <li><a href="#TYPES">Data Types</a><ul class="subcontents">
 <li><a href="#ttf_cache_t">ttf_cache_t</a></li>
+<li><a href="#ttf_class_t">ttf_class_t</a></li>
 <li><a href="#ttf_err_cb_t">ttf_err_cb_t</a></li>
 <li><a href="#ttf_rect_t">ttf_rect_t</a></li>
 <li><a href="#ttf_stretch_t">ttf_stretch_t</a></li>
@@ -334,6 +339,7 @@ span.string {
 <li><a href="#ttf_rect_s">ttf_rect_s</a></li>
 </ul></li>
 <li><a href="#ENUMERATIONS">Enumerations</a><ul class="subcontents">
+<li><a href="#ttf_class_e">ttf_class_e</a></li>
 <li><a href="#ttf_stretch_e">ttf_stretch_e</a></li>
 <li><a href="#ttf_style_e">ttf_style_e</a></li>
 <li><a href="#ttf_weight_e">ttf_weight_e</a></li>
@@ -490,6 +496,19 @@ managed by the cache and should not be deleted.</p>
 </tbody></table>
 <h4 class="returnvalue">Return Value</h4>
 <p class="description">Font family name or <code>NULL</code></p>
+<h3 class="function"><a id="ttfCacheGetFamilyClass">ttfCacheGetFamilyClass</a></h3>
+<p class="description">Get the font family class at index N.</p>
+<p class="code">
+<a href="#ttf_class_t">ttf_class_t</a> ttfCacheGetFamilyClass(<a href="#ttf_cache_t">ttf_cache_t</a> *cache, size_t n);</p>
+<h4 class="parameters">Parameters</h4>
+<table class="list"><tbody>
+<tr><th>cache</th>
+<td class="description">Font cache</td></tr>
+<tr><th>n</th>
+<td class="description">Font index starting at <code>0</code></td></tr>
+</tbody></table>
+<h4 class="returnvalue">Return Value</h4>
+<p class="description">Family class or <code>TTF_CLASS_UNSPEC</code></p>
 <h3 class="function"><a id="ttfCacheGetFilename">ttfCacheGetFilename</a></h3>
 <p class="description">Get the font filename at index N.</p>
 <p class="code">
@@ -582,6 +601,43 @@ size_t ttfCacheGetNumFonts(<a href="#ttf_cache_t">ttf_cache_t</a> *cache);</p>
 </tbody></table>
 <h4 class="returnvalue">Return Value</h4>
 <p class="description">Font weight or <code>TTF_WEIGHT_UNSPEC</code></p>
+<h3 class="function"><a id="ttfCacheIsFixedPitch">ttfCacheIsFixedPitch</a></h3>
+<p class="description">Returns whether the font at index N is fixed-pitch.</p>
+<p class="code">
+<span class="reserved">bool</span> ttfCacheIsFixedPitch(<a href="#ttf_cache_t">ttf_cache_t</a> *cache, size_t n);</p>
+<h4 class="parameters">Parameters</h4>
+<table class="list"><tbody>
+<tr><th>cache</th>
+<td class="description">Font cache</td></tr>
+<tr><th>n</th>
+<td class="description">Font index starting at <code>0</code></td></tr>
+</tbody></table>
+<h4 class="returnvalue">Return Value</h4>
+<p class="description"><code>true</code> if fixed-pitch, <code>false</code> otherwise</p>
+<h3 class="function"><a id="ttfCacheSearch">ttfCacheSearch</a></h3>
+<p class="description">Search the cache for fonts with the specified family class.</p>
+<p class="code">
+<a href="#ttf_cache_t">ttf_cache_t</a> *ttfCacheSearch(<a href="#ttf_cache_t">ttf_cache_t</a> *cache, <a href="#ttf_class_t">ttf_class_t</a> family_class, <a href="#ttf_style_t">ttf_style_t</a> style, <a href="#ttf_weight_t">ttf_weight_t</a> weight, <a href="#ttf_stretch_t">ttf_stretch_t</a> stretch, <span class="reserved">bool</span> fixed_pitch);</p>
+<h4 class="parameters">Parameters</h4>
+<table class="list"><tbody>
+<tr><th>cache</th>
+<td class="description">Font cache</td></tr>
+<tr><th>family_class</th>
+<td class="description">Family class or <code>TTF_CLASS_UNSPEC</code> to match all</td></tr>
+<tr><th>style</th>
+<td class="description">Font style or <code>TTF_STYLE_UNSPEC</code> to match all</td></tr>
+<tr><th>weight</th>
+<td class="description">Font weight or <code>TTF_WEIGHT_UNSPEC</code> to match all</td></tr>
+<tr><th>stretch</th>
+<td class="description">Font stretch or <code>TTF_STRETCH_UNSPEC</code> to match all</td></tr>
+<tr><th>fixed_pitch</th>
+<td class="description"><code>true</code> to only return fixed-pitch (monospace) fonts</td></tr>
+</tbody></table>
+<h4 class="returnvalue">Return Value</h4>
+<p class="description">Cache of matching fonts or <code>NULL</code> if none found</p>
+<h4 class="discussion">Discussion</h4>
+<p class="discussion">This function searches the cache for all fonts matching the specified family class, style, weight, stretch, and fixed-pitch requirements.  A family class of <code>TTF_CLASS_UNSPEC</code> matches all family classes, and <code>TTF_STYLE_UNSPEC</code>, <code>TTF_WEIGHT_UNSPEC</code>, and <code>TTF_STRETCH_UNSPEC</code> match any style, weight, or stretch.  If <code>fixed_pitch</code> is <code>true</code>, only monospace (fixed-pitch) fonts are returned.</p>
+<p class="discussion">The returned <code>ttf_cache_t</code> object contains all matching fonts and must be freed using <a href="#ttfCacheDelete">ttfCacheDelete</a>.  The fonts in the returned cache are lazily loaded as needed.</p>
 <h3 class="function"><a id="ttfContainsChar">ttfContainsChar</a></h3>
 <p class="description">Test for the presence of a Unicode character in a font.</p>
 <p class="code">
@@ -809,6 +865,17 @@ values are scaled using the specified font size.</p>
 </tbody></table>
 <h4 class="returnvalue">Return Value</h4>
 <p class="description">Family name</p>
+<h3 class="function"><a id="ttfGetFamilyClass">ttfGetFamilyClass</a></h3>
+<p class="description">Get the family class of a font.</p>
+<p class="code">
+<a href="#ttf_class_t">ttf_class_t</a> ttfGetFamilyClass(<a href="#ttf_t">ttf_t</a> *font);</p>
+<h4 class="parameters">Parameters</h4>
+<table class="list"><tbody>
+<tr><th>font</th>
+<td class="description">Font</td></tr>
+</tbody></table>
+<h4 class="returnvalue">Return Value</h4>
+<p class="description">Family class or <code>TTF_CLASS_UNSPEC</code></p>
 <h3 class="function"><a id="ttfGetItalicAngle">ttfGetItalicAngle</a></h3>
 <p class="description">Get the italic angle.</p>
 <p class="code">
@@ -978,6 +1045,11 @@ size_t ttfGetNumFonts(<a href="#ttf_t">ttf_t</a> *font);</p>
 <p class="code">
 typedef struct _ttf_cache_s ttf_cache_t;
 </p>
+<h3 class="typedef"><a id="ttf_class_t">ttf_class_t</a></h3>
+<p class="description">Family class bitfield</p>
+<p class="code">
+typedef enum <a href="#ttf_class_e">ttf_class_e</a> ttf_class_t;
+</p>
 <h3 class="typedef"><a id="ttf_err_cb_t">ttf_err_cb_t</a></h3>
 <p class="description">Font error callback</p>
 <p class="code">
@@ -1029,6 +1101,23 @@ typedef enum <a href="#ttf_weight_e">ttf_weight_e</a> ttf_weight_t;
 <td class="description">Top offset</td></tr>
 </tbody></table>
 <h2 class="title"><a id="ENUMERATIONS">Constants</a></h2>
+<h3 class="enumeration"><a id="ttf_class_e">ttf_class_e</a></h3>
+<p class="description">Family class bit values</p>
+<h4 class="constants">Constants</h4>
+<table class="list"><tbody>
+<tr><th>TTF_CLASS_CLARENDON_SERIFS </th><td class="description">Clarendon serifs</td></tr>
+<tr><th>TTF_CLASS_FREEFORM_SERIFS </th><td class="description">Freeform serifs</td></tr>
+<tr><th>TTF_CLASS_MODERN_SERIFS </th><td class="description">Modern serifs</td></tr>
+<tr><th>TTF_CLASS_NONE </th><td class="description">No classification</td></tr>
+<tr><th>TTF_CLASS_OLDSTYLE_SERIFS </th><td class="description">Old style serifs</td></tr>
+<tr><th>TTF_CLASS_ORNAMENTALS </th><td class="description">Ornamentals</td></tr>
+<tr><th>TTF_CLASS_SANS_SERIF </th><td class="description">Sans-serif</td></tr>
+<tr><th>TTF_CLASS_SCRIPTS </th><td class="description">Scripts</td></tr>
+<tr><th>TTF_CLASS_SLAB_SERIFS </th><td class="description">Slab serifs</td></tr>
+<tr><th>TTF_CLASS_SYMBOLIC </th><td class="description">Symbolic</td></tr>
+<tr><th>TTF_CLASS_TRANSITIONAL_SERIFS </th><td class="description">Transitional serifs</td></tr>
+<tr><th>TTF_CLASS_UNSPEC </th><td class="description">Unspecified</td></tr>
+</tbody></table>
 <h3 class="enumeration"><a id="ttf_stretch_e">ttf_stretch_e</a></h3>
 <p class="description">Font stretch</p>
 <h4 class="constants">Constants</h4>
