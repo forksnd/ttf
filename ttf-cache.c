@@ -25,7 +25,7 @@
 					// Header/prefix string for first line
 #define TTF_CACHE_HEADERLEN	9	// Length of header string
 #define TTF_CACHE_MAX		65536	// Maximum number of cached fonts
-#define TTF_CACHE_VERSION	2	// Version number of cache format
+#define TTF_CACHE_VERSION	3	// Version number of cache format
 
 
 //
@@ -38,9 +38,9 @@ typedef struct _ttf_cfont_s		// Cached font
   char		*filename,		// Filename or URL
 		*family;		// Family
   unsigned	idx;			// Index inside collection
-  int		stretch:4;		// Stretch
-  int		style:2;		// Style
-  int		weight:10;		// Weight
+  int		stretch:5;		// Stretch
+  int		style:3;		// Style
+  int		weight:11;		// Weight
   unsigned	family_class:12;	// Family class
   unsigned	is_fixed_pitch:1;	// Fixed-pitch/monospace?
 } _ttf_cfont_t;
